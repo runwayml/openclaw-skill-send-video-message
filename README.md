@@ -1,6 +1,6 @@
 # Send Video Message — OpenClaw skill
 
-Your agent can **send you a short video in chat**: an AI avatar **speaks a script** with lip-sync, powered by the [Runway API](https://dev.runwayml.com).
+Your agent can **send you a short video in chat**: an AI avatar **speaks a script** with lip-sync, using [Runway Character API]([https://dev.runwayml.com](https://runwayml.com/news/introducing-runway-characters)).
 
 ---
 
