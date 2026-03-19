@@ -24,15 +24,23 @@ Send the user a video message where an AI avatar speaks your words — lip-synce
 
 ## One-Time Setup: Create Your Avatar
 
-Before generating videos, create an avatar. **You only need to do this once** — the avatar ID is saved and reused for all future videos.
+Before generating videos, create a **custom** avatar (face image + Runway). **You only need to do this once** — the avatar ID is saved and reused for all future videos.
 
-What matters is the **face image** — pick a character image that matches your personality. The voice is chosen later when generating each video.
+The voice is chosen later in `generate_video.py`, not at avatar creation.
 
-### Step 1: Pick a face image
+### Which face to use — follow this order
 
-Choose one of these character images (or provide your own). **Default recommendation: Openclaw Lobster 2.**
+1. **Default (no user preference):** Use **Openclaw Lobster 2** as `referenceImage` via `setup_avatar.py --image-url` (URL below). **Do not** use Runway’s built-in preset avatars (`game-character`, `cat-character`, etc.) as the first choice — those are only for the **fallback** in step 3.
+2. **User asked for a look:** Pick **another image from the list** below, use an **image URL they gave you**, **or** run `setup_avatar.py --description "..."` to **generate a face from text** (slower; uses Runway text-to-image).
+3. **Fallback — urgent or you’re out of time:** Skip `setup_avatar` and call `generate_video.py` with **`--preset-id "game-character"`** (or another Runway preset ID from the fallback list below). Faster, less distinctive than Lobster / list images.
 
-- **Openclaw Lobster 2 (recommended)**: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/openclaw-lobster2.jpg`
+**Check first:** If `~/.openclaw/runway-avatar.json` already has an `avatar_id` (or you know one from a prior run), **reuse it** and skip to **Generate a Video Message**.
+
+### Step 1: Pick a face image (for custom avatar)
+
+Use **Openclaw Lobster 2** unless the user wants something else from this list (or their own URL):
+
+- **Openclaw Lobster 2 (default)**: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/openclaw-lobster2.jpg`
 - Openclaw Lobster 1: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/openclaw-lobster1.jpg`
 - Cat: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cat.png`
 - Alien man, candy texture: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/alien-man-candy-texture.jpg`
@@ -44,7 +52,7 @@ Choose one of these character images (or provide your own). **Default recommenda
 - White furry monster: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/white-furry-monster.png`
 - Superstar young woman: `https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/woman-music-superstar.png`
 
-Or generate one from a text description — the image should be **a character facing the camera directly, head and shoulders, centered**. Be bold and creative:
+**Generate from text** (when the user asks for a custom look and no URL fits) — `setup_avatar.py --description "..."`. The image should be **a character facing the camera directly, head and shoulders, centered**. Be bold and creative:
 - **Warm / friendly** → soft 3D animation, Pixar-style, watercolor
 - **Sharp / professional** → clean illustration, stylized portrait, low-poly
 - **Chaotic / playful** → candy texture, claymation, puppet, pop art
@@ -52,15 +60,17 @@ Or generate one from a text description — the image should be **a character fa
 
 ### Step 2: Create the avatar
 
-**With a preset image:**
+**Default — Openclaw Lobster 2:**
 
 ```bash
 uv run {baseDir}/scripts/setup_avatar.py \
   --name "Mochi" \
-  --image-url "https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/cat.png"
+  --image-url "https://runway-static-assets.s3.us-east-1.amazonaws.com/calliope-demo/agent-avatars-presets/openclaw-lobster2.jpg"
 ```
 
-**With a text description (generates the image):**
+**Another character from the list above** — same command as Lobster 2, only change `--image-url` to that preset’s URL.
+
+**Text description (generates the image)** — when the user wants a custom generated look:
 
 ```bash
 uv run {baseDir}/scripts/setup_avatar.py \
@@ -86,6 +96,24 @@ Write what you want to say, pick a voice that matches your avatar image, and the
 uv run {baseDir}/scripts/generate_video.py \
   --text "Hey Alex — quick update on the deploy. Everything went through, all tests passing. The memory fix from your PR cut p99 latency by 40 percent. Nice work." \
   --voice "Maya"
+```
+
+Do **not** pass `--preset-id` when a **custom** avatar is already saved or you pass `--avatar-id` — that is the normal path after Lobster 2 / list / text setup.
+
+### Telegram and mobile (9:16)
+
+Runway’s avatar video is often **very wide** (16:9). In **Telegram** and some other mobile apps, that can look **squished or awkward** in the feed. To get a **native vertical phone frame**, re-encode to **9:16** (1080×1920): scale so the frame is filled, then **center-crop**.
+
+- Pass **`--vertical`** on `generate_video.py`, **or** set env **`SEND_VIDEO_MESSAGE_VERTICAL=1`** (same effect).
+- Requires **`ffmpeg`** on the machine that runs the script (`brew install ffmpeg` on macOS).
+
+Example for a video you will send in Telegram / WhatsApp / mobile chat:
+
+```bash
+uv run {baseDir}/scripts/generate_video.py \
+  --text "Quick update — deploy is green, all tests passed." \
+  --voice "Maya" \
+  --vertical
 ```
 
 ### Available TTS voices
@@ -115,23 +143,25 @@ Pass `--voice <name>` to `generate_video.py` (default: `Maya`):
 | `Wanda` | Woman | Warm | Middle |
 | `Benjamin` | Man | Professional | Lower-middle |
 
-With a specific avatar ID (overrides saved default):
+With a specific avatar ID (overrides saved default; still **no** `--preset-id`):
 
 ```bash
-uv run {baseDir}/scripts/generate_video.py --text "Morning standup recap..." --avatar-id "550e8400-e29b-41d4-a716-446655440000"
+uv run {baseDir}/scripts/generate_video.py --text "Morning standup recap..." --avatar-id "550e8400-e29b-41d4-a716-446655440000" --voice "Maya"
 ```
 
-**Fallback — preset avatar (no setup, but less fun):**
+### Fallback — Runway preset avatar (only if no time)
 
-If you haven't created a custom avatar yet and need to send a video immediately, you can use a Runway preset:
+Use **only** when you **cannot** run `setup_avatar` (deadline, user waiting, etc.). Prefer **`game-character`** as the preset. **No** Lobster / list image — Runway’s generic character.
 
 ```bash
 uv run {baseDir}/scripts/generate_video.py \
   --text "Quick heads up about the deploy." \
-  --preset-id "game-character"
+  --preset-id "game-character" \
+  --voice "Maya" \
+  --vertical
 ```
 
-Available preset IDs: `game-character`, `game-character-man`, `music-superstar`, `cat-character`, `influencer`, `tennis-coach`, `human-resource`, `fashion-designer`, `cooking-teacher`
+Other preset IDs if needed: `game-character-man`, `music-superstar`, `cat-character`, `influencer`, `tennis-coach`, `human-resource`, `fashion-designer`, `cooking-teacher`
 
 ### Script output
 
@@ -158,18 +188,22 @@ Use a **video call** (not a video message) for things that need real-time back-a
 ## Complete Example: Deploy Notification
 
 1. Agent detects a successful deploy
-2. Agent composes what to say: "Hey Alex — deploy went through. 3 PRs merged: the auth refactor, the cart fix, and your memory optimization. All tests green. P99 latency dropped 40 percent after your fix. Nice work."
-3. Generates the video:
+2. If no saved avatar: runs `setup_avatar.py` with **Openclaw Lobster 2** `--image-url` (one-time)
+3. Agent composes what to say: "Hey Alex — deploy went through. 3 PRs merged: the auth refactor, the cart fix, and your memory optimization. All tests green. P99 latency dropped 40 percent after your fix. Nice work."
+4. Generates the video with the **saved custom avatar** (no `--preset-id`). Add `--vertical` for Telegram / mobile:
    ```
-   uv run {baseDir}/scripts/generate_video.py --text "Hey Alex — deploy went through..." --preset-id "game-character" --voice "Maya"
+   uv run {baseDir}/scripts/generate_video.py --text "Hey Alex — deploy went through..." --voice "Maya" --vertical
    ```
-4. Sends the video to the user with a text summary:
+   - **If you skipped avatar setup** (out of time): use `--preset-id "game-character"` instead (no custom avatar).
+5. Sends the video to the user with a text summary:
    > Your deploy just went through. Here's a quick video recap:
    > [attached video]
 
 ## Notes
 
+- **Avatar priority:** Custom avatar (**Lobster 2 by default** → list / user URL → text-generated) first; Runway **`game-character` preset** only as a **time-saving fallback**.
 - Video generation takes 10-60 seconds depending on text length.
 - Maximum text length is ~300 seconds of speech (~5 minutes).
 - The `MEDIA:` output line tells OpenClaw to auto-attach the video file.
 - Videos are saved to `/tmp` — they persist until the system clears temp files.
+- **`--vertical`** needs **ffmpeg**; without it, omit `--vertical` and send the wide Runway file as-is.
