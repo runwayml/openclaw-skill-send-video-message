@@ -31,7 +31,7 @@ POLL_INTERVAL = 3
 POLL_TIMEOUT = 600
 DEFAULT_PRESET = "game-host"
 DEFAULT_VOICE = "Maya"
-DEFAULT_BASE_URL = "https://api.dev.runwayml.com"
+RUNWAY_API_BASE_URL = "https://api.dev.runwayml.com"
 API_VERSION = "2024-11-06"
 
 
@@ -53,10 +53,6 @@ def resolve_api_key(arg_key: str | None) -> str:
         print("Error: No API key. Set RUNWAY_API_SECRET or pass --api-key.", file=sys.stderr)
         sys.exit(1)
     return key
-
-
-def resolve_base_url(arg_url: str | None) -> str:
-    return arg_url or os.environ.get("RUNWAY_BASE_URL", DEFAULT_BASE_URL)
 
 
 def poll_task(client, task_id: str) -> dict:
@@ -86,11 +82,9 @@ def main():
     parser.add_argument("--voice", "-v", help="TTS voice preset name (default: Maya)")
     parser.add_argument("--output", "-o", help="Output file path (default: /tmp/runway-avatar-<timestamp>.mp4)")
     parser.add_argument("--api-key", "-k", help="Runway API key (overrides env)")
-    parser.add_argument("--base-url", help="API base URL (overrides env)")
     args = parser.parse_args()
 
     api_key = resolve_api_key(args.api_key)
-    base_url = resolve_base_url(args.base_url)
 
     # Precedence: explicit --avatar-id > explicit --preset-id (ignores saved avatar) > saved/env avatar > default preset
     if args.avatar_id:
@@ -110,7 +104,7 @@ def main():
     from runwayml import RunwayML
     import httpx
 
-    client = RunwayML(api_key=api_key, base_url=base_url)
+    client = RunwayML(api_key=api_key, base_url=RUNWAY_API_BASE_URL)
 
     text_preview = args.text[:60] + ("..." if len(args.text) > 60 else "")
     print(f"Generating video: \"{text_preview}\"")
@@ -144,7 +138,7 @@ def main():
     }
 
     with httpx.Client(timeout=60) as http:
-        resp = http.post(f"{base_url}/v1/avatar_videos", headers=headers, json=body)
+        resp = http.post(f"{RUNWAY_API_BASE_URL}/v1/avatar_videos", headers=headers, json=body)
         if resp.status_code >= 400:
             print(f"Error: avatar_videos returned {resp.status_code}: {resp.text}", file=sys.stderr)
             sys.exit(1)

@@ -18,7 +18,7 @@ Optionally generates a portrait image via text-to-image if no image URL is provi
 Usage:
   uv run setup_avatar.py --name "Mochi" --description "A cute cartoon cat, head and shoulders, facing camera"
   uv run setup_avatar.py --name "Mochi" --image-url "https://example.com/photo.jpg"
-  uv run setup_avatar.py --name "Mochi" --image-url "https://example.com/photo.jpg" --voice "Arjun"
+  uv run setup_avatar.py --name "Mochi" --image-url "https://example.com/photo.jpg"
 """
 
 import argparse
@@ -32,7 +32,7 @@ from pathlib import Path
 POLL_INTERVAL = 3
 POLL_TIMEOUT = 300
 DEFAULT_VOICE = "Maya"
-DEFAULT_BASE_URL = "https://api.dev.runwayml.com"
+RUNWAY_API_BASE_URL = "https://api.dev.runwayml.com"
 API_VERSION = "2024-11-06"
 CONFIG_PATH = Path.home() / ".openclaw" / "runway-avatar.json"
 
@@ -43,10 +43,6 @@ def resolve_api_key(arg_key: str | None) -> str:
         print("Error: No API key. Set RUNWAY_API_SECRET or pass --api-key.", file=sys.stderr)
         sys.exit(1)
     return key
-
-
-def resolve_base_url(arg_url: str | None) -> str:
-    return arg_url or os.environ.get("RUNWAY_BASE_URL", DEFAULT_BASE_URL)
 
 
 def poll_task(client, task_id: str) -> dict:
@@ -67,7 +63,7 @@ def poll_task(client, task_id: str) -> dict:
     sys.exit(1)
 
 
-def poll_avatar_ready(api_key: str, base_url: str, avatar_id: str) -> dict:
+def poll_avatar_ready(api_key: str, avatar_id: str) -> dict:
     """Poll GET /v1/avatars/{id} until status is READY."""
     import httpx
 
@@ -78,7 +74,7 @@ def poll_avatar_ready(api_key: str, base_url: str, avatar_id: str) -> dict:
     start = time.time()
     while time.time() - start < POLL_TIMEOUT:
         with httpx.Client(timeout=30) as http:
-            resp = http.get(f"{base_url}/v1/avatars/{avatar_id}", headers=headers)
+            resp = http.get(f"{RUNWAY_API_BASE_URL}/v1/avatars/{avatar_id}", headers=headers)
             if resp.status_code >= 400:
                 print(f"Error: GET /v1/avatars/{avatar_id} returned {resp.status_code}: {resp.text}", file=sys.stderr)
                 sys.exit(1)
@@ -119,7 +115,6 @@ def main():
     )
     parser.add_argument("--image-url", help="URL of an existing image to use as the avatar face")
     parser.add_argument("--api-key", "-k", help="Runway API key (overrides env)")
-    parser.add_argument("--base-url", help="API base URL (overrides env)")
     args = parser.parse_args()
 
     if not args.image_url and not args.description:
@@ -127,12 +122,11 @@ def main():
         sys.exit(1)
 
     api_key = resolve_api_key(args.api_key)
-    base_url = resolve_base_url(args.base_url)
 
     from runwayml import RunwayML
     import httpx
 
-    client = RunwayML(api_key=api_key, base_url=base_url)
+    client = RunwayML(api_key=api_key, base_url=RUNWAY_API_BASE_URL)
 
     image_url = args.image_url
     generated_image = False
@@ -168,7 +162,7 @@ def main():
     }
 
     with httpx.Client(timeout=60) as http:
-        resp = http.post(f"{base_url}/v1/avatars", headers=headers, json=body)
+        resp = http.post(f"{RUNWAY_API_BASE_URL}/v1/avatars", headers=headers, json=body)
         if resp.status_code >= 400:
             print(f"Error: /v1/avatars returned {resp.status_code}: {resp.text}", file=sys.stderr)
             sys.exit(1)
@@ -182,7 +176,7 @@ def main():
     status = avatar_data.get("status", "UNKNOWN")
     if status != "READY":
         print(f"  Avatar created (status: {status}), waiting for READY...")
-        poll_avatar_ready(api_key, base_url, avatar_id)
+        poll_avatar_ready(api_key, avatar_id)
 
     save_config(avatar_id, args.name)
 
