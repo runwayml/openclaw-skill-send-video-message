@@ -92,15 +92,16 @@ def main():
     api_key = resolve_api_key(args.api_key)
     base_url = resolve_base_url(args.base_url)
 
-    avatar_id = (
-        args.avatar_id
-        or os.environ.get("RUNWAY_AVATAR_ID")
-        or get_config("avatar_id")
-    )
-    preset_id = (
-        args.preset_id
-        or os.environ.get("RUNWAY_AVATAR_PRESET", DEFAULT_PRESET)
-    )
+    # Precedence: explicit --avatar-id > explicit --preset-id (ignores saved avatar) > saved/env avatar > default preset
+    if args.avatar_id:
+        avatar_id = args.avatar_id
+        preset_id = args.preset_id or os.environ.get("RUNWAY_AVATAR_PRESET", DEFAULT_PRESET)
+    elif args.preset_id:
+        avatar_id = None
+        preset_id = args.preset_id
+    else:
+        avatar_id = os.environ.get("RUNWAY_AVATAR_ID") or get_config("avatar_id")
+        preset_id = os.environ.get("RUNWAY_AVATAR_PRESET", DEFAULT_PRESET)
     voice_preset = (
         args.voice
         or os.environ.get("RUNWAY_VOICE_PRESET", DEFAULT_VOICE)

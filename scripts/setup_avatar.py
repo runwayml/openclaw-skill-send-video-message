@@ -9,12 +9,16 @@
 """
 Create a custom Runway avatar (one-time setup).
 
-Optionally generates a portrait image via text-to-image, then creates an avatar
-with a personality prompt and voice preset. Polls until the avatar is READY.
+Creates an avatar with a face image and voice. The avatar's appearance is what
+matters here — personality and startScript are not used for video messages
+(the spoken content comes from the text you pass to generate_video.py).
+
+Optionally generates a portrait image via text-to-image if no image URL is provided.
 
 Usage:
   uv run setup_avatar.py --name "Mochi" --description "A cute cartoon cat, head and shoulders, facing camera"
-  uv run setup_avatar.py --name "Mochi" --image-url "https://example.com/photo.jpg" --personality "You are Mochi, a friendly assistant."
+  uv run setup_avatar.py --name "Mochi" --image-url "https://example.com/photo.jpg"
+  uv run setup_avatar.py --name "Mochi" --image-url "https://example.com/photo.jpg" --voice "Arjun"
 """
 
 import argparse
@@ -29,10 +33,6 @@ POLL_INTERVAL = 3
 POLL_TIMEOUT = 300
 DEFAULT_VOICE = "Maya"
 DEFAULT_BASE_URL = "https://api.dev.runwayml.com"
-DEFAULT_PERSONALITY = (
-    "You are a friendly and helpful assistant. "
-    "Be clear, concise, and conversational."
-)
 API_VERSION = "2024-11-06"
 CONFIG_PATH = Path.home() / ".openclaw" / "runway-avatar.json"
 
@@ -117,13 +117,7 @@ def main():
         "--description", "-d",
         help="Text prompt to generate a portrait image (used if --image-url is not provided)",
     )
-    parser.add_argument("--image-url", help="URL of an existing image to use as the avatar")
-    parser.add_argument(
-        "--personality", "-p",
-        default=DEFAULT_PERSONALITY,
-        help="Personality prompt for the avatar",
-    )
-    parser.add_argument("--voice", "-v", default=DEFAULT_VOICE, help="TTS voice preset")
+    parser.add_argument("--image-url", help="URL of an existing image to use as the avatar face")
     parser.add_argument("--api-key", "-k", help="Runway API key (overrides env)")
     parser.add_argument("--base-url", help="API base URL (overrides env)")
     args = parser.parse_args()
@@ -141,17 +135,19 @@ def main():
     client = RunwayML(api_key=api_key, base_url=base_url)
 
     image_url = args.image_url
+    generated_image = False
     if not image_url:
         print(f"Generating avatar image: \"{args.description}\"...")
         img_task = client.text_to_image.create(
-            model="gen4_image",
+            model="gemini_2.5_flash",
             prompt_text=args.description,
-            ratio="1080:1080",
+            ratio="1248:832",
         )
         print(f"  Image task: {img_task.id}")
         img_result = poll_task(client, img_task.id)
         image_url = img_result.output[0]
         print(f"  Image ready: {image_url[:80]}...")
+        generated_image = True
 
     print(f"Creating avatar '{args.name}'...")
     headers = {
@@ -163,12 +159,12 @@ def main():
     body = {
         "name": args.name,
         "referenceImage": image_url,
-        "personality": args.personality,
+        "personality": "You are a helpful assistant.",
         "voice": {
             "type": "runway-live-preset",
-            "presetId": args.voice.lower(),
+            "presetId": DEFAULT_VOICE.lower(),
         },
-        "imageProcessing": "optimize",
+        "imageProcessing": "optimize" if generated_image else "none",
     }
 
     with httpx.Client(timeout=60) as http:
