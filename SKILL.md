@@ -100,14 +100,29 @@ uv run {baseDir}/scripts/generate_video.py \
 
 Do **not** pass `--preset-id` when a **custom** avatar is already saved or you pass `--avatar-id` — that is the normal path after Lobster 2 / list / text setup.
 
-### Telegram and mobile (9:16)
+### Cropping for mobile & Telegram
 
-Runway’s avatar video is often **very wide** (16:9). In **Telegram** and some other mobile apps, that can look **squished or awkward** in the feed. To get a **native vertical phone frame**, re-encode to **9:16** (1080×1920): scale so the frame is filled, then **center-crop**.
+Runway’s avatar video is **wide** (16:9). On phones that can look **squished or awkward**. Crop it to match the target app:
 
-- Pass **`--vertical`** on `generate_video.py`, **or** set env **`SEND_VIDEO_MESSAGE_VERTICAL=1`** (same effect).
-- Requires **`ffmpeg`** on the machine that runs the script (`brew install ffmpeg` on macOS).
+| Target | Flag | Resolution | Ratio |
+|--------|------|-----------|-------|
+| **Telegram** | `--square` | 1080×1080 | 1:1 |
+| **Other mobile** (WhatsApp, iMessage, etc.) | `--vertical` | 1080×1920 | 9:16 |
 
-Example for a video you will send in Telegram / WhatsApp / mobile chat:
+Both flags scale the frame up to cover the target area, then **center-crop**. They are mutually exclusive — pick one. Env vars work too: `SEND_VIDEO_MESSAGE_SQUARE=1` or `SEND_VIDEO_MESSAGE_VERTICAL=1`.
+
+Requires **`ffmpeg`** on the machine that runs the script (`brew install ffmpeg` on macOS).
+
+**Telegram** (square):
+
+```bash
+uv run {baseDir}/scripts/generate_video.py \
+  --text "Quick update — deploy is green, all tests passed." \
+  --voice "Maya" \
+  --square
+```
+
+**WhatsApp / iMessage / other mobile** (vertical):
 
 ```bash
 uv run {baseDir}/scripts/generate_video.py \
@@ -190,9 +205,9 @@ Use a **video call** (not a video message) for things that need real-time back-a
 1. Agent detects a successful deploy
 2. If no saved avatar: runs `setup_avatar.py` with **Openclaw Lobster 2** `--image-url` (one-time)
 3. Agent composes what to say: "Hey Alex — deploy went through. 3 PRs merged: the auth refactor, the cart fix, and your memory optimization. All tests green. P99 latency dropped 40 percent after your fix. Nice work."
-4. Generates the video with the **saved custom avatar** (no `--preset-id`). Add `--vertical` for Telegram / mobile:
+4. Generates the video with the **saved custom avatar** (no `--preset-id`). Add `--square` for Telegram or `--vertical` for other mobile:
    ```
-   uv run {baseDir}/scripts/generate_video.py --text "Hey Alex — deploy went through..." --voice "Maya" --vertical
+   uv run {baseDir}/scripts/generate_video.py --text "Hey Alex — deploy went through..." --voice "Maya" --square
    ```
    - **If you skipped avatar setup** (out of time): use `--preset-id "game-character"` instead (no custom avatar).
 5. Sends the video to the user with a text summary:
@@ -206,4 +221,4 @@ Use a **video call** (not a video message) for things that need real-time back-a
 - Maximum text length is ~300 seconds of speech (~5 minutes).
 - The `MEDIA:` output line tells OpenClaw to auto-attach the video file.
 - Videos are saved to `/tmp` — they persist until the system clears temp files.
-- **`--vertical`** needs **ffmpeg**; without it, omit `--vertical` and send the wide Runway file as-is.
+- **`--square`** and **`--vertical`** need **ffmpeg**; without it, omit both and send the wide Runway file as-is.

@@ -16,7 +16,8 @@ Usage:
   uv run generate_video.py --text "Hi there" --voice "Arjun"
   uv run generate_video.py --text "Hi there" --avatar-id "your-uuid"
   uv run generate_video.py --text "Hi there" --output /tmp/my-video.mp4
-  uv run generate_video.py --text "Hi" --voice Maya --vertical   # 9:16 for Telegram / mobile
+  uv run generate_video.py --text "Hi" --voice Maya --vertical   # 9:16 for mobile
+  uv run generate_video.py --text "Hi" --voice Maya --square     # 1:1 for Telegram
 """
 
 import argparse
@@ -37,9 +38,9 @@ DEFAULT_PRESET = "cat-character"
 DEFAULT_VOICE = "Maya"
 RUNWAY_API_BASE_URL = "https://api.dev.runwayml.com"
 API_VERSION = "2024-11-06"
-# Center-crop to vertical 9:16 (good for phone feeds; avoids wide video squished in Telegram, etc.)
 VERTICAL_WIDTH = 1080
 VERTICAL_HEIGHT = 1920
+SQUARE_SIZE = 1080
 
 
 def get_config(key: str, default: str | None = None) -> str | None:
@@ -124,6 +125,46 @@ def reencode_vertical_9_16(src: Path, dest: Path) -> None:
         sys.exit(1)
 
 
+def reencode_square(src: Path, dest: Path) -> None:
+    """Scale and center-crop to 1080x1080 square. Best for Telegram. Requires ffmpeg on PATH."""
+    ffmpeg = shutil.which("ffmpeg")
+    if not ffmpeg:
+        print(
+            "Error: --square requires ffmpeg on PATH. Install ffmpeg or run without --square.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    vf = (
+        f"scale={SQUARE_SIZE}:{SQUARE_SIZE}:force_original_aspect_ratio=increase,"
+        f"crop={SQUARE_SIZE}:{SQUARE_SIZE}"
+    )
+    cmd = [
+        ffmpeg,
+        "-y",
+        "-i",
+        str(src),
+        "-vf",
+        vf,
+        "-c:v",
+        "libx264",
+        "-preset",
+        "fast",
+        "-crf",
+        "23",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "128k",
+        "-movflags",
+        "+faststart",
+        str(dest),
+    ]
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"Error: ffmpeg failed:\n{result.stderr}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description="Generate an avatar video from text")
     parser.add_argument(
@@ -143,7 +184,12 @@ def main():
     parser.add_argument(
         "--vertical",
         action="store_true",
-        help=f"Re-encode to {VERTICAL_WIDTH}x{VERTICAL_HEIGHT} (9:16) for mobile/Telegram (requires ffmpeg)",
+        help=f"Re-encode to {VERTICAL_WIDTH}x{VERTICAL_HEIGHT} (9:16) for mobile (requires ffmpeg)",
+    )
+    parser.add_argument(
+        "--square",
+        action="store_true",
+        help=f"Re-encode to {SQUARE_SIZE}x{SQUARE_SIZE} (1:1) for Telegram (requires ffmpeg)",
     )
     parser.add_argument("--api-key", "-k", help="Runway API key (overrides env)")
     args = parser.parse_args()
@@ -155,6 +201,16 @@ def main():
         "true",
         "yes",
     )
+    square = args.square or os.environ.get(
+        "SEND_VIDEO_MESSAGE_SQUARE", ""
+    ).lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    if vertical and square:
+        print("Error: --vertical and --square are mutually exclusive.", file=sys.stderr)
+        sys.exit(1)
 
     api_key = resolve_api_key(args.api_key)
 
@@ -178,7 +234,8 @@ def main():
     client = RunwayML(api_key=api_key, base_url=RUNWAY_API_BASE_URL)
 
     text_preview = args.text[:60] + ("..." if len(args.text) > 60 else "")
-    total_steps = 4 if vertical else 3
+    needs_reencode = vertical or square
+    total_steps = 4 if needs_reencode else 3
     print(f'Generating video: "{text_preview}"')
 
     print(f"  Step 1/{total_steps}: Text-to-speech (voice: {voice_preset})...")
@@ -237,15 +294,20 @@ def main():
         dl.raise_for_status()
         raw_bytes = dl.content
 
-    if vertical:
-        print(
-            f"  Step 4/{total_steps}: Re-encoding to {VERTICAL_WIDTH}x{VERTICAL_HEIGHT} (9:16) for mobile…"
-        )
+    if needs_reencode:
+        if square:
+            label = f"{SQUARE_SIZE}x{SQUARE_SIZE} (1:1) for Telegram"
+        else:
+            label = f"{VERTICAL_WIDTH}x{VERTICAL_HEIGHT} (9:16) for mobile"
+        print(f"  Step 4/{total_steps}: Re-encoding to {label}…")
         with tempfile.NamedTemporaryFile(suffix=".mp4", delete=False) as tmp:
             tmp_path = Path(tmp.name)
         try:
             tmp_path.write_bytes(raw_bytes)
-            reencode_vertical_9_16(tmp_path, output_path)
+            if square:
+                reencode_square(tmp_path, output_path)
+            else:
+                reencode_vertical_9_16(tmp_path, output_path)
         finally:
             tmp_path.unlink(missing_ok=True)
     else:
