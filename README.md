@@ -21,16 +21,29 @@ Give your key a name and share it with your OpenClaw agent
 
 <img src="https://runway-static-assets.s3.us-east-1.amazonaws.com/devportal/avatars/quickstart/4.png" width="600" />
 
-3. **Ask your agent to send you video messages** The agent follows the installed skill’s instructions.
-In the chat app, send messages like
+3. **Ask your agent to send you video messages.** The agent follows the installed skill’s instructions.
+In the chat app, send messages like:
+
 ```
 Send me a video recap of what you did today.
 ```
 ```
-What is on my to-do list today? Send me a video.
+What is on my to-do list today? Send me a video message.
 ```
 ```
-Send me a video message about the weather every day at 9am
+Send me a video message about the weather every day at 9am.
+```
+```
+Send me a video message and explain this blog post: https://runwayml.com/product/characters
+```
+```
+Summarize this PR in a video message: https://github.com/org/repo/pull/42
+```
+```
+Send me a video walkthrough of what changed in the last deploy.
+```
+```
+Record a video congratulating the team on shipping v2.0.
 ```
 
 ---
