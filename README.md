@@ -4,7 +4,9 @@ Your agent can **send you a short video in chat**: a character **speaks a script
 
 ---
 
-## For OpenClaw users
+## Demo
+
+## Quick setup
 
 1. **Ask your OpenClaw agent** to install this skill from ClawHub: **[https://clawhub.ai/yining1023/send-video-message](https://clawhub.ai/yining1023/send-video-message)**
 
