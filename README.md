@@ -1,16 +1,23 @@
 # Send Video Message — OpenClaw skill
 
-Your agent can **send you a short video in chat**: a character **speaks a script** with lip-sync, using [Runway Character API]([https://dev.runwayml.com](https://runwayml.com/news/introducing-runway-characters)).
+Your Openclaw agent can **send you a video message in chat**: a character speaks a script, using [Runway Character API]([https://dev.runwayml.com](https://runwayml.com/news/introducing-runway-characters)).
 
 ---
 
 ## Demo
+You: "Send me a video message of your standup notes."
+Your agent: reply with a video message.
+<video src="https://github.com/user-attachments/assets/06d78388-68b2-4142-a60c-79e83eaee9a1" width="600" controls></video>
+
+It works with many different characters. You can choose one by saying "Use the lobster/alien/cat image as the character", upload an image in the chat, or ask the agent to generate an image for you.
 
 ## Quick setup
 
 1. **Ask your OpenClaw agent** to install this skill from ClawHub: **[https://clawhub.ai/yining1023/send-video-message](https://clawhub.ai/yining1023/send-video-message)**
 
 2. **Create a Runway API key** at [dev.runwayml.com](https://dev.runwayml.com) and give it to your agent (it needs to be available as **`RUNWAY_API_SECRET`** where the agent runs).
+
+When signing up, you will get 600 free credits = 30 minutes of video messages.
 
 [Get started with Runway API key](https://docs.dev.runwayml.com/characters/quickstart/#2-create-a-new-api-key)
 Go to the Manage tab in the top bar, then click the New API key button in the top-right corner.
