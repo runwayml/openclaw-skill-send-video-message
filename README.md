@@ -1,6 +1,6 @@
 # Send Video Message — OpenClaw skill
 
-Your agent can **send you a short video in chat**: an AI avatar **speaks a script** with lip-sync, using [Runway Character API]([https://dev.runwayml.com](https://runwayml.com/news/introducing-runway-characters)).
+Your agent can **send you a short video in chat**: a character **speaks a script** with lip-sync, using [Runway Character API]([https://dev.runwayml.com](https://runwayml.com/news/introducing-runway-characters)).
 
 ---
 
@@ -8,16 +8,33 @@ Your agent can **send you a short video in chat**: an AI avatar **speaks a scrip
 
 1. **Ask your OpenClaw agent** to install this skill from ClawHub: **[https://clawhub.ai/yining1023/send-video-message](https://clawhub.ai/yining1023/send-video-message)**
 
-2. **Create a Runway API key** at [dev.runwayml.com](https://dev.runwayml.com) and **give it to your agent** (it needs to be available as **`RUNWAY_API_SECRET`** where the agent runs).
+2. **Create a Runway API key** at [dev.runwayml.com](https://dev.runwayml.com) and give it to your agent (it needs to be available as **`RUNWAY_API_SECRET`** where the agent runs).
 
-3. **Ask your agent to send you video messages** — e.g. “Send me a video recap of what we shipped today.” The agent follows the installed skill’s instructions.
+[Get started with Runway API key](https://docs.dev.runwayml.com/characters/quickstart/#2-create-a-new-api-key)
+Go to the Manage tab in the top bar, then click the New API key button in the top-right corner.
 
-You don’t need to clone this repo or run scripts yourself.
+<img src="https://runway-static-assets.s3.us-east-1.amazonaws.com/devportal/avatars/quickstart/3.png" width="600" />
+
+Give your key a name and share it with your OpenClaw agent
+
+<img src="https://runway-static-assets.s3.us-east-1.amazonaws.com/devportal/avatars/quickstart/4.png" width="600" />
+
+3. **Ask your agent to send you video messages** The agent follows the installed skill’s instructions.
+In the chat app, send messages like
+```
+Send me a video recap of what you did today.
+```
+```
+What is on my to-do list today? Send me a video.
+```
+```
+Send me a video message about the weather every day at 9am
+```
 
 ---
 
 ## Source & docs
 
-- **ClawHub listing:** [clawhub.ai/yining1023/send-video-message](https://clawhub.ai/yining1023/send-video-message)
-- Skill instructions (for the agent): [`SKILL.md`](./SKILL.md)
-- [OpenClaw skills](https://docs.openclaw.ai) · [Runway API docs](https://docs.dev.runwayml.com)
+- [ClawHub skill: Send Video Message](https://clawhub.ai/yining1023/send-video-message)
+- [Runway Characters API](https://runwayml.com/product/characters)
+- [Runway dev portal](https://dev.runwayml.com/)
