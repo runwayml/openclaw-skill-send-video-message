@@ -7,9 +7,10 @@ Your Openclaw agent can **send you a video message in chat**: a character speaks
 ## Demo
 You: "Send me a video message of your standup notes."
 Your agent: reply with a video message.
-<video src="https://github.com/user-attachments/assets/06d78388-68b2-4142-a60c-79e83eaee9a1" width="600" controls></video>
+<video src="https://github.com/user-attachments/assets/06d78388-68b2-4142-a60c-79e83eaee9a1" width="500" controls></video>
 
 It works with many different characters. You can choose one by saying "Use the lobster/alien/cat image as the character", upload an image in the chat, or ask the agent to generate an image for you.
+<video src="https://github.com/user-attachments/assets/95208b1c-357a-4b0a-a967-b1ccbd6456fe" width="500" controls></video>
 
 ## Quick setup
 
